@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>nanoStream - Live Replay</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Video shared from a Live Stream"/>
+
+    <link href="replayer.css" rel="stylesheet"/>
+    <link rel="shortcut icon" href="favicon.ico">
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script type="module" src="replayer.js"></script>
+</head>
+<body class="loading">
+<div class="flexcol container relative">
+    <div id="container" class="grows">
+        <video id="hlsPlayer"></video>
+    </div>
+    <div class="controls flexrow">
+        <button id="muteButton">Unmute</button>
+        <button id="playButton">Play</button>
+        <button id="pauseButton">Pause</button>
+        <div id="strip" class="flexrow grows">
+            <div id="currentTime">0:00</div>
+            <div id="stripHolder" class="relative grows">
+                <div id="stripper"></div>
+            </div>
+            <div id="duration">0:00</div>
+        </div>
+        <button id="fullScreenButton">Full Screen</button>
+
+    </div>
+</div>
+<div class="error" id="error">
+    This Link Is Invalid
+</div>
+<div class="videoloading">
+    Loading video
+</div>
+</body>
+</html>

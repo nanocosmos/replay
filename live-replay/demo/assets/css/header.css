@@ -1,0 +1,72 @@
+* {
+    font-family: "Source Sans Pro";
+}
+
+header {
+    background-color: rgb(237, 125, 14);
+    padding: 10px;
+    color: #fff;
+}
+
+header div {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.nano-logo {
+    height: 30px;
+    margin-right: 10px;
+}
+
+h3 {
+    border-bottom: none;
+    margin: 0;
+    line-height: 1.1;
+}
+
+body {
+    background-color: rgb(244, 244, 244);
+}
+
+.playerheader {
+    color: rgb(237, 125, 14);
+    text-align: center;
+}
+
+
+@media only screen and (max-width: 600px) and (orientation: portrait) {
+    header div {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    input#streamNameInput {
+        margin-top: 10px;
+    }
+
+    .header-title h3 {
+        font-size: smaller;
+    }
+}
+
+footer {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 10px;
+}
+
+#package-version {
+    font-weight: 500;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.6);
+    line-height: 1;
+}

@@ -1,0 +1,141 @@
+.loading .videoloading {
+    display: flex;
+}
+
+.witherror .error {
+    display: flex;
+}
+
+.witherror .container, .loading .container {
+    display: none;
+}
+
+.error, .videoloading {
+    display: none;
+    background: #ff8800;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 4rem;
+    text-align: center;
+}
+
+.title {
+    background: #ff8800;
+    color: white;
+    padding: 0.25rem;
+}
+
+
+.container {
+	margin: 0;
+	width: 100%;
+	height: 100%;
+	align-content: center;
+}
+
+body {
+    font-family: sans-serif;
+    margin: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    background: slategray;
+}
+
+.relative {
+    position: relative;
+}
+
+.grows {
+    flex-grow: 1
+}
+
+.flexrow {
+    flex-direction: row;
+    display: flex;
+}
+
+.title, .controls {
+    position: ABSOLUTE;
+    width: 100%;
+    left: 0;
+    opacity: 0;
+    transition: all 0.25s linear;
+}
+
+.container:hover > .title,
+.container:hover > .controls {
+    opacity: 1;
+}
+
+.controls {
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    gap: 0.5rem;
+    background-color: #f0f0f0;
+    min-height: 2rem;
+}
+
+.controls button {
+    background-color: gray;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.controls button:hover {
+    background-color: #ff8800;
+}
+
+#stripper {
+    background: #ff8800;
+    height: 100%;
+    transition: all 0.5s linear;
+}
+
+#strip {
+    gap: 0.5rem;
+}
+
+video::-webkit-media-controls {
+    display: none !important;
+}
+
+video::-moz-media-controls {
+    display: none !important;
+}
+
+video::-o-media-controls {
+    display: none !important;
+}
+
+video::media-controls {
+    display: none !important;
+}
+
+button#fullScreenButton {
+    margin-right: 0.75rem;
+}
+
+#container {
+	height: 100%;
+}
+
+video {
+	width: 100%;
+	display: block;
+	height: 100%;
+	object-fit: contain;
+}

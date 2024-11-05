@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>nanoStream - Live Replay Demo</title>
+    <link href="assets/css/index.css" rel="stylesheet">
+    <link href="assets/css/header.css" rel="stylesheet">
+    <link rel="shortcut icon" href="assets/images/favicon.ico">
+    <script type="module" src="index.js"></script>
+    <style>
+    </style>
+</head>
+<header>
+    <div>
+        <div class="header-title">
+            <a href="https://www.nanocosmos.de/v6/">
+                <img src="assets/images/nsc-white.png" class="nano-logo" alt="nanocosmos">
+            </a>
+            <h3>Live Replay Demo</h3>
+        </div>
+        <div class="flexrow artifakt">
+            <input type="text" id="streamNameInput" placeholder="Enter stream name" />
+        </div>
+    </div>
+</header>
+
+<body>
+    <div id="container">
+        <div id="content">
+            <div id="error" class="invalid">
+                There are no clips available for the supplied stream. Please double-check it has been written correctly,
+                or try again later.
+            </div>
+            <div class="iframecontainer">
+                <iframe id="pvrFrame"></iframe>
+            </div>
+        </div>
+        <div class="nanoplayer">
+            <iframe id="iframe"></iframe>
+        </div>
+    </div>
+</body>
+<footer>
+    <div class="version">
+        <span id="package-version">Version </span>
+    </div>
+</footer>
+
+</html>

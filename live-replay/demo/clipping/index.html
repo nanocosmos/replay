@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>nanoStream - Live Clipping and Share Demo</title>
+    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/header.css" rel="stylesheet">
+    <link rel="shortcut icon" href="../assets/images/favicon.ico">
+    <script>
+
+
+		// show the PVR iframe
+		function runStream() {
+
+			const
+				iframe = document.getElementById("pvrFrame");
+
+			iframe.src = `hls-play.html${window.location.search}`;
+		}
+
+
+    </script>
+    <style>
+
+		iframe {
+			display: block !important;
+		}
+
+        #container {
+            padding: 0 1rem;
+			justify-content: center;
+		}
+		.iframecontainer {
+			max-width: 800px;
+		}
+
+    </style>
+</head>
+
+<body onload="runStream()">
+<header>
+    <div>
+        <div class="header-title">
+            <a href="https://www.nanocosmos.de/v6/">
+                <img src="../assets/images/nsc-white.png" class="nano-logo" alt="nanocosmos">
+            </a>
+            <h3>Live Clipping and Share Demo</h3>
+        </div>
+    </div>
+</header>
+<div id="container">
+    <div class="iframecontainer">
+        <iframe id="pvrFrame"></iframe>
+    </div>
+</div>
+</body>

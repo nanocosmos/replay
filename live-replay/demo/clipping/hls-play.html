@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>nanocosmos HLS Stream Player</title>
+    <link rel="stylesheet" href="hls-play.css">
+    <link rel="stylesheet" href="../assets/css/header.css">
+    <link rel="shortcut icon" href="../assets/images/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script type="module" src="hls-play.js"></script>
+</head>
+
+<body>
+    <div class="playerheader">
+        <h2> Replay Stream &#8634;</h2>
+    </div>
+
+    <div class="videoframer">
+        <video id="hlsPlayer" playsinline muted controls></video>
+    </div>
+
+    <!-- <div class="help">
+        Use the controls to play, pause, and navigate through the stream.
+    </div> -->
+
+    <div class="controls shortcuts">
+        <button id="rew30">&#8676; 30</button>
+        <div id="wallclocktime" class="grows"></div>
+        <div id="timelive" class="grows"></div>
+        <button id="fwd30">30 &#8677;</button>
+    </div>
+
+    <div class="controls sharecontrols">
+        <button id="share10">First 10s &#128279;</button>
+        <button id="share30">First 30s &#128279; </button>
+        <button id="sharelast10">Last 10s &#128279;</button>
+        <button id="sharelast30">Last 30s &#128279;</button>
+    </div>
+
+    <div class="controls cuecontrols">
+        <div class="flexcol">
+            <button id="cuein">&#8676; Set Start Point</button>
+            <input type="text" placeholder="not set" id="start-time">
+        </div>
+        <div class="flexcol">
+            <button id="cueout">Set End Point &#8677;</button>
+            <input type="text" placeholder="not set" id="end-time">
+        </div>
+        <div class="flexcol only-with-cue">
+            <button id="share">Share &#128279;</button>
+            <div id="info-time" class="infotext"></div>
+        </div>
+    </div>
+
+    <div class="urlbox" aria-label="Share URL for selected interval">
+        <div id="url-share" class="url">Share URL (will be displayed here)</div>
+        <a id="share-url-link" href="#" target="_blank" style="display:none;">Share URL Link</a>
+    </div>
+
+    <div class="urlbox" aria-label="Embed URL for selected interval">
+        <div id="url-embed" class="url">Embed URL (will be displayed here)</div>
+        <a id="embed-url-link" href="#" target="_blank" style="display:none;">Embed URL Link</a>
+    </div>
+
+
+    <div class="urlbox" aria-label="Custom FFMPEG Clipping And Processing">
+        <div id="cmd-ffmpeg" class="url">FFMPEG Command line (will be displayed here)</div>
+        <p id="ffmpeg-url-link" href="#" target="_blank" style="display:none;">FFMPEG Link</p>
+    </div>
+
+    <div class="status" id="status"></div>
+</body>
+
+</html>
