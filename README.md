@@ -68,7 +68,7 @@ https://docs.nanocosmos.de/docs/cloud-frontend-v3/Dashboard_Live_Processing#outp
 #### Live Replay Library
 
 A library to integrate in your workflow that provides the relevant URLs you need for this service.
-[Check Out the Documentation](api.md)
+[Check Out the Documentation](live-replay/api.md)
 
 Package path: live-replay/lib/lib.livereplay.js
 Web URL: https://replay.nanocosmos.de/live-replay/lib/lib.livereplay.js
