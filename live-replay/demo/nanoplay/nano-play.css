@@ -1,0 +1,68 @@
+.playergroup {
+    margin: 0 0.75rem;
+}
+
+div#playerDiv {
+    aspect-ratio: 16 / 9;
+    height: auto !important;
+    width: 100%;
+}
+
+div#motivator {
+    margin: 2rem 0;
+    padding: 1em;
+    border-radius: 5px;
+    text-align: center;
+    background-image: linear-gradient(to top, rgba(0, 31, 58, 0.8), rgba(1, 2, 3, 0.9));
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center bottom;
+}
+
+div#motivator .branding {
+    height: 50px
+}
+
+div#motivator h4 {
+    margin: 0;
+    font-size: 1.5rem;
+    margin-top: 1rem;
+    font-weight: 400;
+    color: #fff;
+}
+
+div#motivator h4 span {
+    color: rgb(237, 125, 14);
+    font-weight: 600;
+}
+
+
+.flexrow {
+    display: flex;
+}
+
+.grows {
+    flex-grow: 1;
+}
+
+.stats.flexrow>div {
+    text-align: center;
+}
+
+.latencyheader {
+    text-align: center;
+    margin: 0.25rem;
+    padding: 0.25rem;
+}
+
+
+div#bufferTimeDelay {
+    font-size: 2rem;
+    color: rgb(237, 125, 14);
+}
+
+div#bufferTimeDelay:after {
+    content: " s";
+    font-size: 1rem;
+    color: black;
+}

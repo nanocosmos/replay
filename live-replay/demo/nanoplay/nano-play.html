@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link href="nano-play.css" rel="stylesheet">
+	<link rel="stylesheet" href="../assets/css/header.css">
+    <link rel="shortcut icon" href="../assets/images/favicon.ico">
+</head>
+
+<body>
+	<div class="playergroup">
+		<div class="playerheader">
+			<h2> Live Stream </h2>
+		</div>
+		<div id="playerDiv"></div>
+		<div id="motivator">
+			<img class="branding" src="../assets/images/nsc.png" />
+			<h4>
+				<span>Interactive Streaming</span><br />
+				that means business.
+			</h4>
+		</div>
+		<div class="latencyheader">Latency</div>
+		<div class="stats flexrow">
+			<div class="grows" id="bufferTimeDelay"></div>
+		</div>
+	</div>
+
+	<script src="//demo.nanocosmos.de/nanoplayer/api/release/nanoplayer.4.min.js?20240815"></script>
+	<script>
+
+		let player;
+
+		const
+            bintuApiUrl = "https://" + (getQueryVariable("bintu") || "bintu.nanocosmos.de"),
+			streamName = getQueryVariable("streamname") || "",
+			jwtoken = getQueryVariable("jwtoken") || "",
+			config = {
+				"source": {
+                    "group": {
+                        "id": streamName,
+                        "apiurl": bintuApiUrl,
+                        "startQuality": "medium",
+                        ...jwtoken && {
+	                        "security": {
+		                        "jwtoken": jwtoken
+	                        }
+                        }
+                    }
+				},
+				"playback": {
+					"autoplay": true,
+					"automute": true,
+					"muted": true
+				},
+				"style": {
+					"displayMutedAutoplay": false,
+					"width": "auto",
+					"height": "auto"
+				},
+				events: {
+					onStats: function (e) {
+						var stats = e.data.stats;
+						document.getElementById('bufferTimeDelay').textContent = stats.buffer.delay.avg.toFixed(2);
+					}
+				}
+			};
+		document.addEventListener('DOMContentLoaded', function () {
+			player = new NanoPlayer("playerDiv");
+			player.setup(config).then(function (config) {
+				console.log("setup success");
+				console.log("config: " + JSON.stringify(config, undefined, 4));
+			}, function (error) {
+				console.log(error.message);
+			});
+		});
+
+		// Function to parse URL parameters
+		function getQueryVariable(variable) {
+
+			const
+				query = window.location.search.substring(1),
+				vars = query.split("&");
+
+			for (let i = 0; i < vars.length; i++) {
+				const pair = vars[i].split("=");
+				if (decodeURIComponent(pair[0]) === variable) {
+					return decodeURIComponent(pair[1]);
+				}
+			}
+			console.log("Query variable %s not found", variable);
+
+		}
+	</script>
+</body>
+
+</html>
