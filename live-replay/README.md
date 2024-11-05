@@ -70,14 +70,14 @@ https://docs.nanocosmos.de/docs/cloud-frontend-v3/Dashboard_Live_Processing#outp
 A library to integrate in your workflow that provides the relevant URLs you need for this service.
 [Check Out the Documentation](api.md)
 
-Package path: live-replay/lib/lib.livereplay.js
+Package path: live-replay/lib/lib.livereplay.js 
 Web URL: https://replay.nanocosmos.de/live-replay/lib/lib.livereplay.js
 
 #### Live and Clipping Demo App
 
 Web application showing replay, clipping, share link creation and real-time live playback side by side.
 
-Package path: live-replay/demo/index.html
+Package path: live-replay/demo/index.html 
 Web URL: https://replay.nanocosmos.de/live-replay/demo/index.html?streamname=XXXXX-YYYYY
 
 Replace XXXXX-YYYYY with your stream name or enter it in the top right field.
@@ -96,7 +96,7 @@ Additionally info: if you would like to process/download/convert the clip, an ff
 
 Web application showing replay, clipping and share link creation.
 
-Package path: live-replay/demo/clipping/index.html
+Package path: live-replay/demo/clipping/index.html 
 Web URL: https://replay.nanocosmos.de/live-replay/demo/clipping/index.html?streamname=XXXXX-YYYYY
 
 Replace XXXXX-YYYYY with your stream name or enter it in the top right field.
@@ -112,7 +112,7 @@ Additionally info: if you would like to process/download/convert the clip, an ff
 
 Lean player app for playback of replay share links.
 
-Package path: live-replay/replayer/index.html
+Package path: live-replay/replayer/index.html 
 Web URL: https://replay.nanocosmos.de/live-replay/replayer/index.html?share=YOUR_SHARE
 
 Replace YOUR_SHARE with your share string.
