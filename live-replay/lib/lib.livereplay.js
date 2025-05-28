@@ -14,7 +14,7 @@
 
 const
 
-	VERSION = "1.22",
+	VERSION = "1.23.0",
 
 	/**
 	 * @type {CONFIG}
@@ -86,8 +86,7 @@ function getSessionFromFilename(timestampedFilenameOrSessionId) {
  *
  * @param {string} streamName - The stream name to get the playlist for.
  * @param {CONFIG} [CONFIG=DEFAULT_CONFIG] - Configuration object.
- * @returns {{getHlsUrl: (function(): string), getFFMPEGCommandLine: (function(number, number): string|string), getShareUrl: (function(number, number): string|string), load: (function(): Promise<{streamName?: string, data?: Object, url?: String, error?: Error}>)}}
- * @constructor
+ * @returns {{getHlsUrl: (function(number=, string=): string), getFFMPEGCommandLine: (function(number, number, *): string|string), getShareUrl: (function(number, number, number): string|string), getSegmentCutout: ((function(number, number, *): ({startSegment: number, endSegment: number, startOffset: number, duration: number}|null))|*), getSegmentForTime: ((function(number, Hls): number)|*), load: (function(number=): Promise<{streamName?: string, data?: Object, url?: String, error?: Error}>), findBestHlsUrl: ((function(number): Promise<string>)|*), getEmbedUrl: ((function(number, number, number): string)|*)}} * @constructor
  */
 
 function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
@@ -95,7 +94,13 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 	if (!streamName) throw new Error("Streamname must be provided");
 
 	const
-		TAG = "[LiveReplay:" + streamName + "]";
+
+		// Whether the provided streamname is a virtual ABR streamname
+		isNativeAbr = streamName.endsWith("-abr"),
+		// In such a case - this would be the real (PT) streamname
+		processedStreamName = isNativeAbr ? streamName.split("-abr")[0]: streamName,
+
+		TAG = "[LiveReplay:" + processedStreamName + "]";
 
 	let
 		state;
@@ -112,7 +117,7 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 	function _getBaseUrl(relativePath) {
 
 		const
-			organization = streamName.split("-")[0];
+			organization = processedStreamName.split("-")[0];
 
 		if (CONFIG.USEORGA) return `${CONFIG.BUCKET_URL}/${organization}` + (relativePath ? "/" + relativePath : "");
 
@@ -122,11 +127,24 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 	/**
 	 * Gets the HLS Playlist URL.
 	 * @param {number?} sessionTimestamp If provided - will return the timestamped playlist filename
+	 * @param {string?} suffix Can be "-abr" for an ABR playlist, else just dont provide it.
 	 * @returns {string} The HLS Playlist URL.
 	 */
 
-	function getHlsUrl(sessionTimestamp) {
-		return _getBaseUrl(`${streamName}${sessionTimestamp ? "-" + sessionTimestamp : ""}.m3u8`);
+	function getHlsUrl(sessionTimestamp, suffix = undefined) {
+		return _getBaseUrl(`${processedStreamName}${suffix || ""}${sessionTimestamp ? "-" + sessionTimestamp : ""}.m3u8`);
+	}
+
+	/**
+	 * Gets the HLS URL associated with the streamname, respecting -abr if this controller was created
+	 * with a stream like "****-abr"
+	 *
+	 * @param {number} sessionTimestamp An ABR or Regular Timestamp
+	 * @returns {string}
+	 */
+
+	function getResolvedHlsUrl(sessionTimestamp) {
+		return getHlsUrl(sessionTimestamp, isNativeAbr ? "-abr":"");
 	}
 
 	/**
@@ -145,9 +163,37 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 	}
 
 	/**
+	 * Returns the Best playlist available for this streamname. Will be a single-stream playlist or
+	 * an ABR playlist with the different transcoding qualities as specified in Bintu when first
+	 * creating the stream.
+	 * @param {number} abrSessionTimestamp The Session Timestamp
+	 * @returns {Promise<string>} The URL to the best playlist for the provided streamname.
+	 */
+
+	async function findBestHlsUrl(abrSessionTimestamp) {
+
+		try {
+
+			const
+				url = getHlsUrl(abrSessionTimestamp, "-abr"),
+				playlistResponse = await fetch(url),
+				playlist = await playlistResponse.text();
+
+			if (playlist && playlist.indexOf("#EXT") >= 0) return url;
+
+		} catch (e) {
+			console.log(TAG, "- ABR Playlist: Does not exist.");
+		}
+
+		// Fall-back to a regulare playlist
+		return getHlsUrl(abrSessionTimestamp);
+
+	}
+
+	/**
 	 * Gets the Embed URL for a time interval.
-	 * @param {number} cueInTime - The relative start time of the interval.
-	 * @param {number} cueOutTime - The relative end time of the interval.
+	 * @param {number} cueInTime - The relative start time of the interval in seconds.
+	 * @param {number} cueOutTime - The relative end time of the interval in seconds.
 	 * @param {number} sessionTimestamp - The playlist session timestamp
 	 * @returns {string} The Replay Embed URL.
 	 */
@@ -169,22 +215,22 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 
 	/**
 	 * Gets the FFMPEG Command Line to extract a specific interval from the current playlist.
-	 * @param {number} cueInTime - The start time of the interval.
-	 * @param {number} cueOutTime - The end time of the interval.
+	 * @param {number} cueInTime - The start time of the interval in seconds.
+	 * @param {number} cueOutTime - The end time of the interval in seconds.
 	 * @param sessionTimestamp
-	 * @returns {string} The FFMPEG command line.
+	 * @returns {string} A curated FFMPEG command line that can be used to extract video in the desired interval
 	 */
 
 	function getFFMPEGCommandLine(cueInTime, cueOutTime, sessionTimestamp) {
 
-		return cueInTime >= 0 && cueOutTime && cueOutTime > cueInTime && streamName
-			? `ffmpeg -ss ${cueInTime.toFixed(3)} -to ${cueOutTime.toFixed(3)} -i ${getHlsUrl(sessionTimestamp)} -c copy -y shared.mp4`
+		return cueInTime >= 0 && cueOutTime && cueOutTime > cueInTime && processedStreamName
+			? `ffmpeg -ss ${cueInTime.toFixed(3)} -to ${cueOutTime.toFixed(3)} -i ${getResolvedHlsUrl(sessionTimestamp)} -c copy -y shared.mp4`
 			: "";
 	}
 
 	/**
 	 * Gets the segment number for a time
-	 * @param {number} time
+	 * @param {number} time time in seconds
 	 * @param {Hls} hlsPlayer The HLS.JS instance
 	 * @returns {number}
 	 */
@@ -214,8 +260,8 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 	/**
 	 * Gets the Segment interval and offsets for a specified cueIn + cueOut
 	 *
-	 * @param {number} cueIn
-	 * @param {number} cueOut
+	 * @param {number} cueIn Cue-In time in Seconds
+	 * @param {number} cueOut Cue-Out time in Seconds
 	 * @param hlsPlayer
 	 * @returns {{startSegment: number, endSegment: number, startOffset: number, duration: number}|null}
 	 */
@@ -260,9 +306,17 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 		};
 	}
 
+	/**
+	 * Parses the X-NANO header that contains the Session Timestamp. This header is generated so the
+	 * "current playlist" knows its timestamp. This is used for Sharing the Video - or else the Shared
+	 * links would point to different videos.
+	 * @param {string} playlistContent Raw playlist in text format
+	 * @returns {{file: string, session: number}|{}}
+	 * @private
+	 */
 	function parsePlaylistTimestamp(playlistContent) {
 		// Look for the EXT-X-NANO-PLAYLIST tag
-		const nanoTagMatch = playlistContent.match(/#EXT-X-NANO-PLAYLIST\s+([^\s]+)/);
+		const nanoTagMatch = playlistContent.match(/#EXT-X-NANO-PLAYLIST[:\s]+\s*([^\s]+)/);
 
 		if (nanoTagMatch) {
 			const nanoPlaylistFile = nanoTagMatch[1];
@@ -281,18 +335,22 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 	}
 
 	/**
-	 * Fetches the HLS Playlist.
+	 * Fetches the HLS Playlist relevant to the streamname and parses the Session ID from inside.
+	 * The final user does not need to call this function - or is really needed to start a playback
+	 * IF the REAL m3u8 URL is known. This routine is used within this library because it's neccessary
+	 * sometimes to decode session timestamps in order to build the m3u8 URL to hand to hls.js. This is
+	 * done automatically by the async function findBestHlsUrl.
 	 * @returns {Promise<{streamName?: string, data?: Object, url?: String, error?: Error}>} The fetched playlist data.
 	 */
 	async function fetchPlaylist(sessionTimestamp) {
 		try {
 			const
-				url = getHlsUrl(sessionTimestamp),
+				url = getResolvedHlsUrl(sessionTimestamp),
 				response = await fetch(url + "?_=" + Date.now()),
 				data = await response.text();
 
 			if (CONFIG.DEBUG) console.log(TAG, "Received", data);
-			return {streamName, data, url, ...parsePlaylistTimestamp(data)};
+			return {streamName: processedStreamName, data, url, ...parsePlaylistTimestamp(data)};
 
 		} catch (error) {
 			if (CONFIG.DEBUG) console.error(TAG, "Error fetching HLS Playlist", error);
@@ -319,11 +377,14 @@ function LiveReplay(streamName, CONFIG = DEFAULT_CONFIG) {
 		load,
 
 		getHlsUrl,
+		getResolvedHlsUrl,
+		findBestHlsUrl,
 		getShareUrl,
 		getFFMPEGCommandLine,
 		getSegmentCutout,
 		getSegmentForTime,
-		getEmbedUrl
+		getEmbedUrl,
+		isNativeAbr
 	}
 
 }
