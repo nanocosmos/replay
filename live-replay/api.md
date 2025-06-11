@@ -22,6 +22,9 @@ const liveReplay = new LiveReplay(streamName);
 // This is the URL of the current playlist that you will feed the HLS player with
 console.log("HLS Playlist URL:", liveReplay.getHlsUrl());
 
+// This is the Best URL for the streamname: It can be used to obtain an ABR playlist if available
+console.log("HLS Playlist URL:", await liveReplay.findBestUrl());
+
 // This generates a Embed URL for the specified Cue IN and Cue Out of the CURRENT playlist
 console.log("Share URL:", liveReplay.getEmbedUrl(10, 60));
 
@@ -56,6 +59,9 @@ const liveReplay = new LiveReplay(streamName);
 
 // This is the URL of the current playlist that you will feed the HLS player with
 console.log("HLS URL:", liveReplay.getHlsUrl(session));
+
+// This is the Best URL for the streamname: It can be used to obtain an ABR playlist if available
+console.log("HLS Playlist URL:", await liveReplay.findBestUrl(session));
 
 // This generates a Embed URL for the specified Cue IN and Cue Out of the CURRENT playlist
 console.log("Share URL:", liveReplay.getEmbedUrl(10, 60, session));
@@ -93,6 +99,21 @@ LiveReplay(streamName, CONFIG = DEFAULT_CONFIG)
 #### `getHlsUrl(session: number?)`
 
 Gets the HLS Playlist URL associated to the stream and start timestamp.
+
+**Parameters**
+
+- `session` (number, optional): The playlist session, if provided, will return the URL of that specific playlist. Otherwise it returns the URL of the current playlist.
+
+**Returns**
+
+- `string`: The HLS Playlist URL.
+
+
+#### `findBestHlsUrl(session: number?)`
+
+Finds the best HLS Playlist available for the provided streamname and session ID, and returns its URL. 
+- If available, a ABR playlist with your transcoding profiles will be returned. 
+- If no ABR playlist is available, it will return the traditional single stream playlist associated to the streamnname and session ID.
 
 **Parameters**
 
@@ -187,12 +208,14 @@ Or an empty object if decoding fails.
 
 ### CONFIG Type Definition
 
-The `CONFIG` type is an object with the following properties:
+The `CONFIG` type is an object used to initialize the library and has the following properties:
 
+- `PAGE_ROOT` (string): The root URL of the server hosting this page, used to generate links to the different applications (replayer, clip n share).
+- `BUCKET_URL` (string): The base URL for the bucket hosting the Video Segments.
 - `USEORGA` (boolean): Indicates whether to use organization-specific URLs.
-- `PAGE_ROOT` (string): The root URL of the page.
 - `DEBUG` (boolean): Flag for enabling or disabling debug mode.
-- `BUCKET_URL` (string): The base URL for the bucket.
+
+Third party users of this library will be provided with the appropriate values to configure the service. Example:
 
 ### Default Configuration
 

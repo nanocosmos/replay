@@ -11,8 +11,8 @@ const
 
 	MAX_BUFFER_LENGTH_MAX = 300,
 	MAX_BUFFER_LENGTH_ADD = 30,
-    MIN_CUE_IN = 0,
-    MAX_CUE_OUT = 1e12,
+	MIN_CUE_IN = 0,
+	MAX_CUE_OUT = 1e12,
 
 	HLSOPTIONS = {
 		enableWorker: true,
@@ -25,7 +25,9 @@ const
 		maxRetry: 5,				// Maximum number of retries
 		retryDelay: 1000,           // Delay between retries in milliseconds
 		maxRetryDelay: 10000        // Max delay
-	};
+	},
+
+	VIDEO_OBJECT_FOR_FULLSCREEN = (navigator.userAgent||"").indexOf("Safari") > 0 ? "hlsPlayer" : "container";
 
 
 // Function to parse URL parameters
@@ -48,7 +50,7 @@ function formatTime(seconds, wallclock) {
 
 	if (wallclock) {
 
-		const 
+		const
 			absoluteTime = new Date(wallclock + seconds * 1000), // Add playback time (seconds) to the start time (wallclock in ms)
 
 			// Format wallclock time (HH:MM:SS)
@@ -78,65 +80,202 @@ function formatTime(seconds, wallclock) {
 async function init() {
 
 	const
-        shareCode = _getQueryVariable("share"),
-		shareParams = decodeShareUrl(shareCode),
-        useShareParams = shareParams.streamName && shareParams.session,
-		
-        streamName = (useShareParams ? shareParams.streamName : _getQueryVariable("streamname")) || 
-                      throwErrorWithMessage("URL parameters 'share' or 'streamname' required"),
-        liveReplay = new LiveReplay(streamName),
-        session = useShareParams ? shareParams.session :  
-                  parseInt(_getQueryVariable("session"), 10) || 
-                  (await liveReplay.load()).session,
-        from = useShareParams ? '' : _getQueryVariable("from"),
-        to = useShareParams ? '' : _getQueryVariable("to"),
-        fromMs = (session && from) ? new Date(from).valueOf() : NaN,
-        toMs = (session && to) ? new Date(to).valueOf() : NaN,
-        cueIn = Math.max(MIN_CUE_IN, (useShareParams ? shareParams.cueIn :
-                    !isNaN(fromMs) ? (fromMs - session)/1000 : NaN) || MIN_CUE_IN),
-        cueOut = Math.max(cueIn + 1, (useShareParams ? shareParams.cueOut :
-                    !isNaN(toMs) ? (toMs - session)/1000 : NaN) || MAX_CUE_OUT),
-        url = liveReplay.getHlsUrl(session);
+		// The SHARE Hashed parameters
+		shareCode = _getQueryVariable("share"),
 
-        return {
-            url,
-            session,
-            cueIn,
-            cueOut
-        }
+		// The unpacked JSON parameters: session, streamName, cueIn, cueOut
+		shareParams = decodeShareUrl(shareCode),
+
+		// Use Share Params: When there is a VALID sharecode (there's a session and a stream name)
+		useShareParams = shareParams.streamName,
+
+		sessionOffset = (fromMs, session, defaultValue) => session && fromMs ? !isNaN(fromMs) ? (fromMs - session) / 1000 : defaultValue : defaultValue,
+
+		providedStreamname = useShareParams ? shareParams.streamName : _getQueryVariable("streamname"),
+
+		isNativeAbr = providedStreamname.endsWith("-abr"),
+
+		streamname = isNativeAbr ? providedStreamname.split("-abr")[0] : providedStreamname;
+
+	if (!streamname)
+		throwErrorWithMessage("URL parameters 'share' or 'streamname' required");
+
+	if (useShareParams && !shareParams.session)
+		throwErrorWithMessage("Cannot share this video");
+
+	const
+		liveReplay = new LiveReplay(providedStreamname);
+
+	let
+		cueIn, cueOut, session, bestHlsUrl;
+
+	// Obtain session, cueIn, cueOut from either the Share-encoded parameters
+	// or the regular QueryString
+
+	if (useShareParams) {
+
+		// These come encoded in the hash
+
+		session = shareParams.session;
+		cueIn = shareParams.cueIn;
+		cueOut = shareParams.cueOut;
+		bestHlsUrl = liveReplay.getResolvedHlsUrl(session);
+
+	} else {
+
+
+		// UPDATED APPROACH
+		// regular queryString uses "from" and "to" as a Javascript ISO Date String rather than the Cue Offsets.
+		// Together with the SESSION TIMESTAMP we can obtain the relative cue.
+
+
+		// PREVIOUS APPROACH:
+		//   regular queryString uses "from" and "to" in UTC rather than the Cue Offsets
+		//   but we know the SESSION TIMESTAMP so it's just a matter of substracting it to
+		//   get (approx) cues.
+
+		// If NO session timestamp is provided - liveReplay.laod will load the CURRENT playlist
+		// that will have a timestamp inside
+
+		const
+			requestedSession = parseInt(_getQueryVariable("session"), 10);
+
+		if (requestedSession) {
+			if (isNativeAbr) {
+
+				// Native ABR (streamname-abr) assumes this
+				console.log("- Using session as ABR Session timestamp");
+				bestHlsUrl = await liveReplay.findBestHlsUrl(requestedSession);
+
+			} else {
+				console.warn("- Cannot auto-find ABR Playlist from a transcode session timestamp");
+				bestHlsUrl = liveReplay.getHlsUrl(requestedSession);
+			}
+
+
+		} else {
+			// For the current playlist - we can add "-abr"
+			console.log("- Current playlist - will look for ABR");
+			bestHlsUrl = await liveReplay.findBestHlsUrl();
+		}
+
+		session = parseInt(_getQueryVariable("session"), 10) || (await liveReplay.load()).session;
+		cueIn = sessionOffset(new Date(_getQueryVariable("from")).valueOf(), session, MIN_CUE_IN);
+		cueOut = sessionOffset(new Date(_getQueryVariable("to")).valueOf(), session, MAX_CUE_OUT);
+
+		/* Old convention used raw timestamps on from, like from=18278763784
+		cueIn = sessionOffset(parseInt(_getQueryVariable("from"), 10), session, MIN_CUE_IN);
+		cueOut = sessionOffset(parseInt(_getQueryVariable("to"), 10), session, MAX_CUE_OUT);
+		 */
+	}
+
+	// check cueIn and cueOut bounds
+
+	cueIn = Math.max(MIN_CUE_IN, cueIn || MIN_CUE_IN);
+	cueOut = Math.max(cueIn + 1, cueOut || MAX_CUE_OUT)
+
+	if (!session) {
+		console.warn("Cannot find session information, UTC times will not be displayed");
+	}
+
+	return {
+		url: bestHlsUrl,
+		session,
+		cueIn,
+		cueOut
+	};
+
+}
+
+// Quality Selector Button and Functionality
+function addQualitySelector(hls) {
+
+	const qualitySelector = document.createElement("select");
+	qualitySelector.id = "qualitySelector";
+	qualitySelector.innerHTML = '<option id="autoBitrate" value="-1">Auto</option>'; // Default Auto Quality
+
+	qualitySelector.addEventListener("change", (event) => {
+		const level = parseInt(event.target.value, 10);
+		hls.currentLevel = level; // Set HLS.js to the selected quality level
+	});
+
+	document.querySelector(".controls").appendChild(qualitySelector);
+
+	// Populate quality levels
+	hls.on(Hls.Events.MANIFEST_PARSED, () => {
+
+		const levels = hls.levels;
+
+		// sort reverse
+
+		for (let i = levels.length - 1; i >= 0; i--) {
+			const level = levels[i];
+			const option = document.createElement("option");
+			option.value = "" + i;
+			option.textContent = `${level.height}p`; // Example: 720p, 480p
+			qualitySelector.appendChild(option);
+		}
+
+	});
 }
 
 function run({url, cueIn, cueOut, session}) {
 
 	if (url && cueIn >= 0 && cueOut && cueIn < cueOut) {
-        let
-		    started = false;
-		const
-            getElementById = (id) => document.getElementById(id),
+		let
+			started = false,
+			qualityDisplay,
+			qualitySelector;
 
-            stripper = getElementById("stripper"),
-		    stripHolder = getElementById("stripHolder"),
-		    currentTimeDisplay = getElementById('currentTime'),
-		    durationDisplay = getElementById('duration'),
-			fullScreenButton = getElementById('fullScreenButton'),
-			playButton = getElementById('playButton'),
-			muteButton = getElementById('muteButton'),
-			pauseButton = getElementById('pauseButton'),
-			video = getElementById('hlsPlayer'),
+		const
+			$ = (id) => document.getElementById(id),
+
+			stripper = $("stripper"),
+			stripHolder = $("stripHolder"),
+			currentTimeDisplay = $('currentTime'),
+			durationDisplay = $('duration'),
+			fullScreenButton = $('fullScreenButton'),
+			playButton = $('playButton'),
+			muteButton = $('muteButton'),
+			pauseButton = $('pauseButton'),
+			video = $('hlsPlayer'),
 			hls = new Hls({
 				...HLSOPTIONS,
 				maxBufferLength: Math.min(MAX_BUFFER_LENGTH_MAX, Math.round(cueOut - cueIn) + MAX_BUFFER_LENGTH_ADD),
 				startPosition: cueIn
 			}),
 
+			maybeSetTextContent = (element, content) => {
+				if (element.textContent !== content) element.textContent = content;
+			},
 			updateStrip = () => {
 
 				if (currentTimeDisplay && durationDisplay && stripper) {
-					currentTimeDisplay.textContent = formatTime(video.currentTime, session);
+					maybeSetTextContent(currentTimeDisplay, formatTime(video.currentTime, session));
 					let useEndTime = Math.min(cueOut || 0, video.duration);
-					durationDisplay.textContent = formatTime(useEndTime, session);
+					maybeSetTextContent(durationDisplay, formatTime(useEndTime, session));
 					const percentage = ((video.currentTime - cueIn) / (useEndTime - cueIn)) * 100;
 					stripper.style.width = `${percentage}%`;
+				}
+
+				// current level - cache element
+				qualityDisplay = qualityDisplay || $("autoBitrate");
+				qualitySelector = qualitySelector || $("qualitySelector");
+
+				if (hls.levels.length > 1) {
+
+					const
+						qualityText = `${hls.levels[hls.currentLevel].height}p`,
+						newContent = `Auto${qualityText ? " (" + qualityText + ")" : ""}`;
+
+					maybeSetTextContent(qualityDisplay, newContent);
+
+					if (qualitySelector.style.display !== "block") {
+						qualitySelector.style.display = "block";
+					}
+
+				} else if (qualitySelector.style.display !== "none") {
+					qualitySelector.style.display = "none";
 				}
 			};
 
@@ -147,8 +286,14 @@ function run({url, cueIn, cueOut, session}) {
 			video.muted = true;
 			video.play()
 				.then(() => {
+
 					muteButton.innerText = video.muted ? "Unmute" : "Mute";
 					started = true;
+
+					// INVESTIGATE: Throws an error - but seems fake!
+
+					document.body.classList.remove("loading");
+					document.body.classList.remove("witherror");
 				})
 				.catch((e) => {
 					console.error(e);
@@ -156,15 +301,15 @@ function run({url, cueIn, cueOut, session}) {
 					updateStrip();
 				});
 		});
-        hls.on(Hls.Events.ERROR, (e) => {
-			console.error(e);
-            if (!started) {
-                document.body.classList.remove("loading");
-                document.body.classList.add("witherror");
-                const errorField = document.getElementById("error");
-                if (errorField)
-                    errorField.innerText = "Video failed to load";
-            }
+		hls.on(Hls.Events.ERROR, (e, details) => {
+			console.error(e, details);
+			if (!started) {
+				document.body.classList.remove("loading");
+				document.body.classList.add("witherror");
+				const errorField = document.getElementById("error");
+				if (errorField)
+					errorField.innerText = details?.details || "Video failed to load";
+			}
 		});
 
 		video.addEventListener('playing', () => {
@@ -173,21 +318,20 @@ function run({url, cueIn, cueOut, session}) {
 			started = true;
 		});
 
-		video.addEventListener('timeupdate', () => {
+		// Add Quality Selector
+		addQualitySelector(hls);
 
+		video.addEventListener('timeupdate', () => {
 			if (started) {
 				updateStrip();
-				console.log("time", video.currentTime);
 				if (video.currentTime > cueOut) {
 					console.log("PAST CUEOUT!!!")
 					video.currentTime = cueIn;
 					video.pause();
 				}
 			}
-
-
 		});
-        
+
 		video.addEventListener('seeking', () => {
 
 			if (!started)
@@ -201,7 +345,7 @@ function run({url, cueIn, cueOut, session}) {
 		});
 
 		fullScreenButton.addEventListener('click',
-			() => getElementById("container")
+			() => $(VIDEO_OBJECT_FOR_FULLSCREEN)
 				.requestFullscreen()
 				.finally(() => {
 				})
@@ -222,7 +366,7 @@ function run({url, cueIn, cueOut, session}) {
 				clickX = event.clientX - rect.left,
 				width = rect.width,
 				percentage = clickX / width,
-                endTime = Math.min(cueOut || 0, video.duration);
+				endTime = Math.min(cueOut || 0, video.duration);
 
 			video.currentTime = cueIn + percentage * (endTime - cueIn);
 
@@ -235,7 +379,7 @@ function run({url, cueIn, cueOut, session}) {
 }
 
 function throwErrorWithMessage(message) {
-    throw new Error(message);
+	throw new Error(message);
 }
 
 window.addEventListener('load', () => {

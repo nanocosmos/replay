@@ -239,7 +239,7 @@ async function init() {
 
 	await initTimestamp();
 
-	liveReplayHlsUrl = liveReplay.getHlsUrl(sessionTimestamp);
+	liveReplayHlsUrl = liveReplay.getResolvedHlsUrl(sessionTimestamp);
 
 	video = document.getElementById('hlsPlayer');
 
